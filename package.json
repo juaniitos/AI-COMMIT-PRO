@@ -35,6 +35,11 @@
         "command": "ai-commit-pro.generateCommit",
         "title": "AI Commit: Generate Commit Message",
         "icon": "$(sparkle)"
+      },
+      {
+        "command": "ai-commit-pro.gitWorkflow",
+        "title": "AI Commit: Open Git Workflow",
+        "icon": "$(git-branch)"
       }
     ],
     "keybindings": [
@@ -42,6 +47,12 @@
         "command": "ai-commit-pro.generateCommit",
         "key": "ctrl+shift+c",
         "mac": "cmd+shift+c",
+        "when": "scmProvider == git"
+      },
+      {
+        "command": "ai-commit-pro.gitWorkflow",
+        "key": "ctrl+shift+g",
+        "mac": "cmd+shift+g",
         "when": "scmProvider == git"
       }
     ],
@@ -99,6 +110,11 @@
       "scm/title": [
         {
           "command": "ai-commit-pro.generateCommit",
+          "group": "navigation",
+          "when": "scmProvider == git"
+        },
+        {
+          "command": "ai-commit-pro.gitWorkflow",
           "group": "navigation",
           "when": "scmProvider == git"
         }

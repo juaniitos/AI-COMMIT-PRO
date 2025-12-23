@@ -3,6 +3,8 @@ import { getConfig, isConfigured } from './config';
 import { GitService } from './git';
 import { AIService } from './anthropic';
 import { CommitMessagePanel } from './webview';
+import { GitWorkflowService } from './gitWorkflow';
+import { GitWorkflowPanel } from './gitWorkflowPanel';
 
 export function activate(context: vscode.ExtensionContext) {
   console.log('AI Commit Pro is now active!');
@@ -14,7 +16,14 @@ export function activate(context: vscode.ExtensionContext) {
     }
   );
 
-  context.subscriptions.push(generateCommit);
+  const gitWorkflow = vscode.commands.registerCommand(
+    'ai-commit-pro.gitWorkflow',
+    async () => {
+      await openGitWorkflow(context);
+    }
+  );
+
+  context.subscriptions.push(generateCommit, gitWorkflow);
 }
 
 async function generateCommitMessage(context: vscode.ExtensionContext) {
@@ -212,6 +221,180 @@ async function generateCommitMessage(context: vscode.ExtensionContext) {
         vscode.commands.executeCommand('workbench.action.output.toggleOutput');
       }
     });
+  }
+}
+
+// Nueva función para abrir el Git Workflow
+async function openGitWorkflow(context: vscode.ExtensionContext) {
+  // 1. Validar configuración
+  if (!isConfigured()) {
+    const response = await vscode.window.showWarningMessage(
+      '🔑 API Key de Anthropic no configurada.',
+      'Configurar'
+    );
+    if (response === 'Configurar') {
+      vscode.commands.executeCommand('workbench.action.openSettings', 'aiCommitPro.apiKey');
+    }
+    return;
+  }
+
+  // 2. Obtener workspace
+  const workspaceFolders = vscode.workspace.workspaceFolders;
+  if (!workspaceFolders) {
+    vscode.window.showErrorMessage('📁 No hay workspace abierto');
+    return;
+  }
+
+  let workspaceRoot: string;
+  if (workspaceFolders.length > 1) {
+    const selected = await vscode.window.showQuickPick(
+      workspaceFolders.map(folder => ({
+        label: folder.name,
+        description: folder.uri.fsPath,
+        folder: folder
+      })),
+      { placeHolder: '📂 Selecciona el repositorio' }
+    );
+    if (!selected) {return;}
+    workspaceRoot = selected.folder.uri.fsPath;
+  } else {
+    workspaceRoot = workspaceFolders[0].uri.fsPath;
+  }
+
+  const config = getConfig();
+  const gitWorkflowService = new GitWorkflowService(workspaceRoot);
+  const aiService = new AIService(config);
+
+  let currentGeneratedMessage: string | undefined;
+
+  try {
+    // Obtener estado inicial
+    const state = await gitWorkflowService.getWorkflowState();
+
+    // Mostrar panel
+    GitWorkflowPanel.show(
+      context.extensionUri,
+      state,
+      undefined,
+      // onStageFiles
+      async (files) => {
+        try {
+          await gitWorkflowService.stageFiles(files);
+          const newState = await gitWorkflowService.getWorkflowState();
+          GitWorkflowPanel.show(
+            context.extensionUri,
+            newState,
+            currentGeneratedMessage
+          );
+        } catch (error: any) {
+          vscode.window.showErrorMessage(`❌ Error: ${error.message}`);
+        }
+      },
+      // onUnstageFiles
+      async (files) => {
+        try {
+          await gitWorkflowService.unstageFiles(files);
+          const newState = await gitWorkflowService.getWorkflowState();
+          GitWorkflowPanel.show(
+            context.extensionUri,
+            newState,
+            currentGeneratedMessage
+          );
+        } catch (error: any) {
+          vscode.window.showErrorMessage(`❌ Error: ${error.message}`);
+        }
+      },
+      // onGenerateCommit
+      async () => {
+        try {
+          await vscode.window.withProgress(
+            {
+              location: vscode.ProgressLocation.Notification,
+              title: '🤖 Generando commit message...',
+              cancellable: false
+            },
+            async (progress) => {
+              progress.report({ increment: 50, message: 'Analizando cambios...' });
+
+              const diff = await gitWorkflowService.getStagedDiff();
+              if (!diff) {
+                vscode.window.showWarningMessage('⚠️ No hay cambios staged');
+                return;
+              }
+
+              progress.report({ increment: 75, message: 'Llamando a Claude AI...' });
+
+              const gitService = new GitService(workspaceRoot);
+              const recentCommits = await gitService.getRecentCommits(5);
+
+              const result = await aiService.generateCommitMessage(
+                { files: [], diff },
+                recentCommits
+              );
+
+              currentGeneratedMessage = result.message;
+
+              progress.report({ increment: 100 });
+
+              // Actualizar panel
+              const newState = await gitWorkflowService.getWorkflowState();
+              GitWorkflowPanel.show(
+                context.extensionUri,
+                newState,
+                currentGeneratedMessage
+              );
+
+              vscode.window.showInformationMessage('✨ Mensaje generado con éxito');
+            }
+          );
+        } catch (error: any) {
+          vscode.window.showErrorMessage(`❌ Error: ${error.message}`);
+        }
+      },
+      // onCommit
+      async (message) => {
+        try {
+          await vscode.window.withProgress(
+            {
+              location: vscode.ProgressLocation.Notification,
+              title: '📝 Creando commit...',
+              cancellable: false
+            },
+            async () => {
+              await gitWorkflowService.commitMessage(message);
+              currentGeneratedMessage = undefined;
+
+              const newState = await gitWorkflowService.getWorkflowState();
+              GitWorkflowPanel.show(context.extensionUri, newState);
+
+              vscode.window.showInformationMessage('✅ Commit creado exitosamente');
+            }
+          );
+        } catch (error: any) {
+          vscode.window.showErrorMessage(`❌ Error: ${error.message}`);
+        }
+      },
+      // onPush
+      async () => {
+        try {
+          await vscode.window.withProgress(
+            {
+              location: vscode.ProgressLocation.Notification,
+              title: '🚀 Sincronizando...',
+              cancellable: false
+            },
+            async () => {
+              await gitWorkflowService.push();
+              vscode.window.showInformationMessage('✅ Cambios sincronizados en GitHub');
+            }
+          );
+        } catch (error: any) {
+          vscode.window.showErrorMessage(`❌ Error: ${error.message}`);
+        }
+      }
+    );
+  } catch (error: any) {
+    vscode.window.showErrorMessage(`❌ Error: ${error.message}`);
   }
 }
 
