@@ -1,0 +1,1557 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Commit Generator - Cronograma de Desarrollo</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Poppins:wght@300;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --accent: #14b8a6;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --bg-dark: #0f172a;
+            --bg-card: #1e293b;
+            --bg-hover: #334155;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --border: #334155;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, var(--bg-dark) 0%, #1e1b4b 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            padding: 2rem;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+            animation: fadeInDown 0.6s ease-out;
+        }
+
+        h1 {
+            font-size: 3rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+            font-weight: 300;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+            animation: fadeInUp 0.6s ease-out 0.2s backwards;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            padding: 1.5rem;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 30px rgba(99, 102, 241, 0.3);
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--accent);
+        }
+
+        .timeline {
+            position: relative;
+            animation: fadeInUp 0.6s ease-out 0.4s backwards;
+        }
+
+        .week-section {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            border-left: 4px solid var(--primary);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .week-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(20, 184, 166, 0.05) 100%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .week-section:hover::before {
+            opacity: 1;
+        }
+
+        .week-section.completed {
+            border-left-color: var(--success);
+            opacity: 0.8;
+        }
+
+        .week-section.in-progress {
+            border-left-color: var(--warning);
+            box-shadow: 0 0 30px rgba(245, 158, 11, 0.2);
+        }
+
+        .week-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .week-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .week-number {
+            background: var(--primary);
+            color: white;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 700;
+        }
+
+        .week-progress {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .progress-bar {
+            width: 150px;
+            height: 8px;
+            background: var(--border);
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary) 0%, var(--accent) 100%);
+            border-radius: 4px;
+            transition: width 0.5s ease;
+        }
+
+        .progress-text {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .milestone {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(20, 184, 166, 0.2) 100%);
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+            border: 1px solid var(--primary);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .milestone::before {
+            content: '🎯';
+            font-size: 1.5rem;
+        }
+
+        .task-group {
+            margin-bottom: 2rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .task-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--accent);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .task-title::before {
+            content: '▸';
+            color: var(--primary);
+        }
+
+        .subtask {
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            padding: 0.75rem;
+            border-radius: 8px;
+            transition: background 0.2s ease;
+            margin-bottom: 0.5rem;
+        }
+
+        .subtask:hover {
+            background: var(--bg-hover);
+        }
+
+        .checkbox-wrapper {
+            position: relative;
+            padding-top: 2px;
+        }
+
+        input[type="checkbox"] {
+            appearance: none;
+            width: 24px;
+            height: 24px;
+            border: 2px solid var(--border);
+            border-radius: 6px;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.3s ease;
+            flex-shrink: 0;
+        }
+
+        input[type="checkbox"]:hover {
+            border-color: var(--primary);
+        }
+
+        input[type="checkbox"]:checked {
+            background: var(--success);
+            border-color: var(--success);
+        }
+
+        input[type="checkbox"]:checked::after {
+            content: '✓';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .subtask-text {
+            flex: 1;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+        }
+
+        .subtask.completed .subtask-text {
+            text-decoration: line-through;
+            color: var(--text-secondary);
+        }
+
+        .investment {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid var(--danger);
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            display: inline-block;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+            margin-top: 1rem;
+        }
+
+        .investment::before {
+            content: '💰 ';
+        }
+
+        .metrics-section {
+            background: var(--bg-card);
+            padding: 2rem;
+            border-radius: 16px;
+            margin-top: 3rem;
+            border: 1px solid var(--border);
+        }
+
+        .metrics-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            color: var(--accent);
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+        }
+
+        .metric-item {
+            background: var(--bg-dark);
+            padding: 1rem;
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .metric-label {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--primary);
+        }
+
+        .reset-button {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: var(--danger);
+            color: white;
+            border: none;
+            padding: 1rem 1.5rem;
+            border-radius: 50px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.3);
+            z-index: 1000;
+        }
+
+        .reset-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(239, 68, 68, 0.4);
+        }
+
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 1rem;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .week-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .reset-button {
+                bottom: 1rem;
+                right: 1rem;
+                padding: 0.75rem 1.25rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🚀 AI Commit Generator</h1>
+            <p class="subtitle">Cronograma de Desarrollo - 12 Semanas hacia el MRR</p>
+        </header>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">Progreso Total</div>
+                <div class="stat-value" id="totalProgress">0%</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Tareas Completadas</div>
+                <div class="stat-value" id="completedTasks">0/120</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Semana Actual</div>
+                <div class="stat-value" id="currentWeek">1</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Días Restantes</div>
+                <div class="stat-value" id="daysLeft">84</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Inversión Acumulada</div>
+                <div class="stat-value" id="totalInvestment">$0</div>
+            </div>
+        </div>
+
+        <div class="timeline">
+            <!-- SEMANA 1 -->
+            <div class="week-section" data-week="1">
+                <div class="week-header">
+                    <div class="week-title">
+                        <span class="week-number">1</span>
+                        Setup & Validación
+                    </div>
+                    <div class="week-progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 0%"></div>
+                        </div>
+                        <span class="progress-text">0/15</span>
+                    </div>
+                </div>
+                
+                <div class="milestone">Extension funciona localmente en tu máquina</div>
+                
+                <div class="task-group">
+                    <div class="task-title">Lunes - Miércoles: Research & Validación</div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w1t1" onchange="updateProgress()">
+                        </div>
+                        <label for="w1t1" class="subtask-text">Instalar y probar 5 extensiones similares en VS Code</label>
+                    </div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w1t2" onchange="updateProgress()">
+                        </div>
+                        <label for="w1t2" class="subtask-text">Identificar qué les falta (crear documento de oportunidades)</label>
+                    </div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w1t3" onchange="updateProgress()">
+                        </div>
+                        <label for="w1t3" class="subtask-text">Crear documento con features diferenciadores</label>
+                    </div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w1t4" onchange="updateProgress()">
+                        </div>
+                        <label for="w1t4" class="subtask-text">Validar con 5 desarrolladores en LinkedIn (encuesta rápida)</label>
+                    </div>
+                </div>
+
+                <div class="task-group">
+                    <div class="task-title">Jueves - Viernes: Setup Técnico</div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w1t5" onchange="updateProgress()">
+                        </div>
+                        <label for="w1t5" class="subtask-text">Crear proyecto de VS Code Extension (yo code)</label>
+                    </div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w1t6" onchange="updateProgress()">
+                        </div>
+                        <label for="w1t6" class="subtask-text">Setup TypeScript + estructura base</label>
+                    </div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w1t7" onchange="updateProgress()">
+                        </div>
+                        <label for="w1t7" class="subtask-text">Integrar OpenAI API (cuenta y testing)</label>
+                    </div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w1t8" onchange="updateProgress()">
+                        </div>
+                        <label for="w1t8" class="subtask-text">Git repo + documentación inicial</label>
+                    </div>
+                </div>
+
+                <div class="task-group">
+                    <div class="task-title">Sábado - Domingo: Prototipo Básico</div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w1t9" onchange="updateProgress()">
+                        </div>
+                        <label for="w1t9" class="subtask-text">Feature 1: Leer git diff</label>
+                    </div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w1t10" onchange="updateProgress()">
+                        </div>
+                        <label for="w1t10" class="subtask-text">Feature 2: Enviar a OpenAI</label>
+                    </div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w1t11" onchange="updateProgress()">
+                        </div>
+                        <label for="w1t11" class="subtask-text">Feature 3: Mostrar resultado en VS Code</label>
+                    </div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w1t12" onchange="updateProgress()">
+                        </div>
+                        <label for="w1t12" class="subtask-text">Testing manual con tus propios commits</label>
+                    </div>
+                </div>
+
+                <div class="task-group">
+                    <div class="task-title">Adicionales</div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w1t13" onchange="updateProgress()">
+                        </div>
+                        <label for="w1t13" class="subtask-text">Crear Google Sheet de tracking de métricas</label>
+                    </div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w1t14" onchange="updateProgress()">
+                        </div>
+                        <label for="w1t14" class="subtask-text">Agendar en calendario las 2-3 horas diarias</label>
+                    </div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w1t15" onchange="updateProgress()">
+                        </div>
+                        <label for="w1t15" class="subtask-text">Instalar generator: npm install -g yo generator-code</label>
+                    </div>
+                </div>
+
+                <div class="investment">Inversión: $20 (OpenAI API créditos)</div>
+            </div>
+
+            <!-- SEMANA 2 -->
+            <div class="week-section" data-week="2">
+                <div class="week-header">
+                    <div class="week-title">
+                        <span class="week-number">2</span>
+                        MVP Funcional
+                    </div>
+                    <div class="week-progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 0%"></div>
+                        </div>
+                        <span class="progress-text">0/12</span>
+                    </div>
+                </div>
+
+                <div class="milestone">Extension lista para beta testers</div>
+
+                <div class="task-group">
+                    <div class="task-title">Lunes - Miércoles: Features Core</div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w2t1" onchange="updateProgress()">
+                        </div>
+                        <label for="w2t1" class="subtask-text">Implementar comando: "Generate Commit Message"</label>
+                    </div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w2t2" onchange="updateProgress()">
+                        </div>
+                        <label for="w2t2" class="subtask-text">Agregar configuración: API key del usuario</label>
+                    </div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w2t3" onchange="updateProgress()">
+                        </div>
+                        <label for="w2t3" class="subtask-text">Crear UI: Panel para editar mensaje generado</label>
+                    </div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w2t4" onchange="updateProgress()">
+                        </div>
+                        <label for="w2t4" class="subtask-text">Implementar handling de errores básico</label>
+                    </div>
+                </div>
+
+                <div class="task-group">
+                    <div class="task-title">Jueves - Viernes: Mejoras UX</div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w2t5" onchange="updateProgress()">
+                        </div>
+                        <label for="w2t5" class="subtask-text">Configurar shortcut de teclado (Cmd+Shift+C)</label>
+                    </div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w2t6" onchange="updateProgress()">
+                        </div>
+                        <label for="w2t6" class="subtask-text">Agregar loading indicator</label>
+                    </div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w2t7" onchange="updateProgress()">
+                        </div>
+                        <label for="w2t7" class="subtask-text">Implementar historial de últimos 5 commits</label>
+                    </div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w2t8" onchange="updateProgress()">
+                        </div>
+                        <label for="w2t8" class="subtask-text">Agregar copy to clipboard automático</label>
+                    </div>
+                </div>
+
+                <div class="task-group">
+                    <div class="task-title">Sábado - Domingo: Polish & Testing</div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w2t9" onchange="updateProgress()">
+                        </div>
+                        <label for="w2t9" class="subtask-text">Testing con 10 repos diferentes</label>
+                    </div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w2t10" onchange="updateProgress()">
+                        </div>
+                        <label for="w2t10" class="subtask-text">Fix bugs encontrados</label>
+                    </div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w2t11" onchange="updateProgress()">
+                        </div>
+                        <label for="w2t11" class="subtask-text">Optimizar prompts de IA</label>
+                    </div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w2t12" onchange="updateProgress()">
+                        </div>
+                        <label for="w2t12" class="subtask-text">Escribir README.md completo</label>
+                    </div>
+                </div>
+
+                <div class="investment">Inversión acumulada: $20</div>
+            </div>
+
+            <!-- SEMANA 3 -->
+            <div class="week-section" data-week="3">
+                <div class="week-header">
+                    <div class="week-title">
+                        <span class="week-number">3</span>
+                        Beta Testing & Refinamiento
+                    </div>
+                    <div class="week-progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 0%"></div>
+                        </div>
+                        <span class="progress-text">0/10</span>
+                    </div>
+                </div>
+
+                <div class="milestone">10 beta testers activos con feedback positivo (80%+ dicen "lo usaría")</div>
+
+                <div class="task-group">
+                    <div class="task-title">Lunes: Preparar Beta</div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w3t1" onchange="updateProgress()">
+                        </div>
+                        <label for="w3t1" class="subtask-text">Empaquetar extension (.vsix)</label>
+                    </div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w3t2" onchange="updateProgress()">
+                        </div>
+                        <label for="w3t2" class="subtask-text">Crear formulario de feedback (Google Forms)</label>
+                    </div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w3t3" onchange="updateProgress()">
+                        </div>
+                        <label for="w3t3" class="subtask-text">Preparar instrucciones de instalación</label>
+                    </div>
+                </div>
+
+                <div class="task-group">
+                    <div class="task-title">Martes - Miércoles: Reclutar Beta Testers</div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w3t4" onchange="updateProgress()">
+                        </div>
+                        <label for="w3t4" class="subtask-text">Publicar en LinkedIn: "Busco 10 beta testers"</label>
+                    </div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w3t5" onchange="updateProgress()">
+                        </div>
+                        <label for="w3t5" class="subtask-text">Publicar en Twitter/X</label>
+                    </div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w3t6" onchange="updateProgress()">
+                        </div>
+                        <label for="w3t6" class="subtask-text">Compartir en comunidades dev (Discord, Slack)</label>
+                    </div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w3t7" onchange="updateProgress()">
+                        </div>
+                        <label for="w3t7" class="subtask-text">Conseguir 10-15 beta testers</label>
+                    </div>
+                </div>
+
+                <div class="task-group">
+                    <div class="task-title">Jueves - Domingo: Iterar con Feedback</div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w3t8" onchange="updateProgress()">
+                        </div>
+                        <label for="w3t8" class="subtask-text">Recopilar feedback diario</label>
+                    </div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w3t9" onchange="updateProgress()">
+                        </div>
+                        <label for="w3t9" class="subtask-text">Fix top 3 bugs reportados + implementar top 2 features</label>
+                    </div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w3t10" onchange="updateProgress()">
+                        </div>
+                        <label for="w3t10" class="subtask-text">Mejorar prompts según feedback</label>
+                    </div>
+                </div>
+
+                <div class="investment">Inversión acumulada: $20</div>
+            </div>
+
+            <!-- SEMANA 4 -->
+            <div class="week-section" data-week="4">
+                <div class="week-header">
+                    <div class="week-title">
+                        <span class="week-number">4</span>
+                        Monetización & Publicación 🚀
+                    </div>
+                    <div class="week-progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 0%"></div>
+                        </div>
+                        <span class="progress-text">0/14</span>
+                    </div>
+                </div>
+
+                <div class="milestone">Extension publicada en VS Code Marketplace, 50+ instalaciones primera semana</div>
+
+                <div class="task-group">
+                    <div class="task-title">Lunes - Martes: Setup de Monetización</div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w4t1" onchange="updateProgress()">
+                        </div>
+                        <label for="w4t1" class="subtask-text">Crear cuenta en Stripe</label>
+                    </div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w4t2" onchange="updateProgress()">
+                        </div>
+                        <label for="w4t2" class="subtask-text">Implementar freemium: 10 commits/día gratis</label>
+                    </div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w4t3" onchange="updateProgress()">
+                        </div>
+                        <label for="w4t3" class="subtask-text">Backend simple para validar licencias (Vercel function)</label>
+                    </div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w4t4" onchange="updateProgress()">
+                        </div>
+                        <label for="w4t4" class="subtask-text">Testing de flujo de pago completo</label>
+                    </div>
+                </div>
+
+                <div class="task-group">
+                    <div class="task-title">Miércoles - Jueves: Marketing Assets</div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w4t5" onchange="updateProgress()">
+                        </div>
+                        <label for="w4t5" class="subtask-text">Grabar video demo (2 min, Loom/OBS)</label>
+                    </div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w4t6" onchange="updateProgress()">
+                        </div>
+                        <label for="w4t6" class="subtask-text">Crear screenshots atractivos (5-7 imágenes)</label>
+                    </div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w4t7" onchange="updateProgress()">
+                        </div>
+                        <label for="w4t7" class="subtask-text">Escribir descripción optimizada para marketplace</label>
+                    </div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w4t8" onchange="updateProgress()">
+                        </div>
+                        <label for="w4t8" class="subtask-text">Actualizar README.md con GIFs animados</label>
+                    </div>
+                </div>
+
+                <div class="task-group">
+                    <div class="task-title">Viernes - Sábado: Launch</div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w4t9" onchange="updateProgress()">
+                        </div>
+                        <label for="w4t9" class="subtask-text">Avisar a beta testers del launch</label>
+                    </div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w4t10" onchange="updateProgress()">
+                        </div>
+                        <label for="w4t10" class="subtask-text">Publicar en VS Code Marketplace</label>
+                    </div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w4t11" onchange="updateProgress()">
+                        </div>
+                        <label for="w4t11" class="subtask-text">Launch en Product Hunt (6am PT)</label>
+                    </div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w4t12" onchange="updateProgress()">
+                        </div>
+                        <label for="w4t12" class="subtask-text">Post en LinkedIn + Twitter + dev.to</label>
+                    </div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w4t13" onchange="updateProgress()">
+                        </div>
+                        <label for="w4t13" class="subtask-text">Compartir en 5 comunidades dev</label>
+                    </div>
+                </div>
+
+                <div class="task-group">
+                    <div class="task-title">Domingo: Follow-up</div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w4t14" onchange="updateProgress()">
+                        </div>
+                        <label for="w4t14" class="subtask-text">Responder comentarios + agradecer + monitorear instalaciones</label>
+                    </div>
+                </div>
+
+                <div class="investment">Inversión acumulada: $50 (Stripe + fees)</div>
+            </div>
+
+            <!-- SEMANA 5-6 -->
+            <div class="week-section" data-week="5">
+                <div class="week-header">
+                    <div class="week-title">
+                        <span class="week-number">5-6</span>
+                        Growth & Optimización
+                    </div>
+                    <div class="week-progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 0%"></div>
+                        </div>
+                        <span class="progress-text">0/15</span>
+                    </div>
+                </div>
+
+                <div class="milestone">500-1,000 instalaciones, 10-30 usuarios pagando ($50-180 MRR)</div>
+
+                <div class="task-group">
+                    <div class="task-title">Actividades Diarias (45 min/día)</div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w5t1" onchange="updateProgress()">
+                        </div>
+                        <label for="w5t1" class="subtask-text">Responder preguntas en marketplace</label>
+                    </div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w5t2" onchange="updateProgress()">
+                        </div>
+                        <label for="w5t2" class="subtask-text">Crear contenido técnico (1 post/semana)</label>
+                    </div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w5t3" onchange="updateProgress()">
+                        </div>
+                        <label for="w5t3" class="subtask-text">Fix bugs reportados</label>
+                    </div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w5t4" onchange="updateProgress()">
+                        </div>
+                        <label for="w5t4" class="subtask-text">Monitorear analytics diariamente</label>
+                    </div>
+                </div>
+
+                <div class="task-group">
+                    <div class="task-title">Semana 5: Mejoras</div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w5t5" onchange="updateProgress()">
+                        </div>
+                        <label for="w5t5" class="subtask-text">Feature: Conventional Commits support</label>
+                    </div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w5t6" onchange="updateProgress()">
+                        </div>
+                        <label for="w5t6" class="subtask-text">Feature: Team style presets</label>
+                    </div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w5t7" onchange="updateProgress()">
+                        </div>
+                        <label for="w5t7" class="subtask-text">Mejorar onboarding</label>
+                    </div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w5t8" onchange="updateProgress()">
+                        </div>
+                        <label for="w5t8" class="subtask-text">A/B test de pricing ($4 vs $5 vs $6)</label>
+                    </div>
+                </div>
+
+                <div class="task-group">
+                    <div class="task-title">Semana 6: Más Mejoras</div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w5t9" onchange="updateProgress()">
+                        </div>
+                        <label for="w5t9" class="subtask-text">Feature: PR description generator</label>
+                    </div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w5t10" onchange="updateProgress()">
+                        </div>
+                        <label for="w5t10" class="subtask-text">Feature: Multi-commit squash</label>
+                    </div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w5t11" onchange="updateProgress()">
+                        </div>
+                        <label for="w5t11" class="subtask-text">Optimizar performance</label>
+                    </div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w5t12" onchange="updateProgress()">
+                        </div>
+                        <label for="w5t12" class="subtask-text">Actualizar screenshots/video</label>
+                    </div>
+                </div>
+
+                <div class="task-group">
+                    <div class="task-title">Marketing Continuo</div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w5t13" onchange="updateProgress()">
+                        </div>
+                        <label for="w5t13" class="subtask-text">2 posts técnicos en dev.to + 4 LinkedIn posts</label>
+                    </div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w5t14" onchange="updateProgress()">
+                        </div>
+                        <label for="w5t14" class="subtask-text">1 video tutorial en YouTube</label>
+                    </div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w5t15" onchange="updateProgress()">
+                        </div>
+                        <label for="w5t15" class="subtask-text">Responder preguntas en Reddit r/vscode</label>
+                    </div>
+                </div>
+
+                <div class="investment">Inversión acumulada: $150-200</div>
+            </div>
+
+            <!-- SEMANA 7 -->
+            <div class="week-section" data-week="7">
+                <div class="week-header">
+                    <div class="week-title">
+                        <span class="week-number">7</span>
+                        Evaluación & Decisión GO/NO-GO
+                    </div>
+                    <div class="week-progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 0%"></div>
+                        </div>
+                        <span class="progress-text">0/8</span>
+                    </div>
+                </div>
+
+                <div class="milestone">Decisión basada en datos: ¿Escalar o Pivotar?</div>
+
+                <div class="task-group">
+                    <div class="task-title">Lunes - Martes: Análisis de Métricas</div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w7t1" onchange="updateProgress()">
+                        </div>
+                        <label for="w7t1" class="subtask-text">Crear dashboard de métricas (instalaciones, conversiones, churn)</label>
+                    </div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w7t2" onchange="updateProgress()">
+                        </div>
+                        <label for="w7t2" class="subtask-text">Analizar feedback y reviews</label>
+                    </div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w7t3" onchange="updateProgress()">
+                        </div>
+                        <label for="w7t3" class="subtask-text">Identificar pattern de usuarios que pagan</label>
+                    </div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w7t4" onchange="updateProgress()">
+                        </div>
+                        <label for="w7t4" class="subtask-text">Calcular LTV y CAC</label>
+                    </div>
+                </div>
+
+                <div class="task-group">
+                    <div class="task-title">Miércoles - Viernes: Optimización Final</div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w7t5" onchange="updateProgress()">
+                        </div>
+                        <label for="w7t5" class="subtask-text">Mejorar copy de paywall según datos</label>
+                    </div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w7t6" onchange="updateProgress()">
+                        </div>
+                        <label for="w7t6" class="subtask-text">Optimizar funnel de conversión</label>
+                    </div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w7t7" onchange="updateProgress()">
+                        </div>
+                        <label for="w7t7" class="subtask-text">Implementar feature más pedida + fix top bug</label>
+                    </div>
+                </div>
+
+                <div class="task-group">
+                    <div class="task-title">Sábado - Domingo: DECISIÓN ESTRATÉGICA</div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w7t8" onchange="updateProgress()">
+                        </div>
+                        <label for="w7t8" class="subtask-text">Revisar métricas y decidir: ¿Escalar Plugin a Web App o Pivotar a Email Marketing IA?</label>
+                    </div>
+                </div>
+
+                <div class="investment">Inversión acumulada: $200-250</div>
+            </div>
+
+            <!-- SEMANA 8-12: PLAN A -->
+            <div class="week-section" data-week="8">
+                <div class="week-header">
+                    <div class="week-title">
+                        <span class="week-number">8-12</span>
+                        PLAN A: Escalar a DevDocs AI (Web App)
+                    </div>
+                    <div class="week-progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 0%"></div>
+                        </div>
+                        <span class="progress-text">0/18</span>
+                    </div>
+                </div>
+
+                <div class="milestone">Web app en producción, 20-50 usuarios pagando ($1,000-3,000 MRR)</div>
+
+                <div class="task-group">
+                    <div class="task-title">Semana 8: Planning & Setup</div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w8t1" onchange="updateProgress()">
+                        </div>
+                        <label for="w8t1" class="subtask-text">Definir scope exacto de web app</label>
+                    </div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w8t2" onchange="updateProgress()">
+                        </div>
+                        <label for="w8t2" class="subtask-text">Crear wireframes (Figma)</label>
+                    </div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w8t3" onchange="updateProgress()">
+                        </div>
+                        <label for="w8t3" class="subtask-text">Setup Next.js + Supabase</label>
+                    </div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w8t4" onchange="updateProgress()">
+                        </div>
+                        <label for="w8t4" class="subtask-text">Configurar GitHub OAuth</label>
+                    </div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w8t5" onchange="updateProgress()">
+                        </div>
+                        <label for="w8t5" class="subtask-text">Diseñar base de datos</label>
+                    </div>
+                </div>
+
+                <div class="task-group">
+                    <div class="task-title">Semana 9-10: Desarrollo Core</div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w8t6" onchange="updateProgress()">
+                        </div>
+                        <label for="w8t6" class="subtask-text">GitHub integration (repo connection)</label>
+                    </div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w8t7" onchange="updateProgress()">
+                        </div>
+                        <label for="w8t7" class="subtask-text">Background job processor</label>
+                    </div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w8t8" onchange="updateProgress()">
+                        </div>
+                        <label for="w8t8" class="subtask-text">IA documentation generator (engine)</label>
+                    </div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w8t9" onchange="updateProgress()">
+                        </div>
+                        <label for="w8t9" class="subtask-text">Dashboard básico</label>
+                    </div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w8t10" onchange="updateProgress()">
+                        </div>
+                        <label for="w8t10" class="subtask-text">Sistema de créditos/usage</label>
+                    </div>
+                </div>
+
+                <div class="task-group">
+                    <div class="task-title">Semana 11: Features & Polish</div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w8t11" onchange="updateProgress()">
+                        </div>
+                        <label for="w8t11" class="subtask-text">Templates de documentación</label>
+                    </div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w8t12" onchange="updateProgress()">
+                        </div>
+                        <label for="w8t12" class="subtask-text">Export a Markdown/PDF</label>
+                    </div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w8t13" onchange="updateProgress()">
+                        </div>
+                        <label for="w8t13" class="subtask-text">Stripe integration completa</label>
+                    </div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w8t14" onchange="updateProgress()">
+                        </div>
+                        <label for="w8t14" class="subtask-text">Landing page profesional</label>
+                    </div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w8t15" onchange="updateProgress()">
+                        </div>
+                        <label for="w8t15" class="subtask-text">Onboarding flow completo</label>
+                    </div>
+                </div>
+
+                <div class="task-group">
+                    <div class="task-title">Semana 12: Launch Web App</div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w8t16" onchange="updateProgress()">
+                        </div>
+                        <label for="w8t16" class="subtask-text">Beta privado con usuarios del plugin</label>
+                    </div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w8t17" onchange="updateProgress()">
+                        </div>
+                        <label for="w8t17" class="subtask-text">Fix bugs críticos</label>
+                    </div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w8t18" onchange="updateProgress()">
+                        </div>
+                        <label for="w8t18" class="subtask-text">🚀 Public launch + marketing push</label>
+                    </div>
+                </div>
+
+                <div class="investment">Inversión total: $820 (acumulado)</div>
+            </div>
+
+            <!-- SEMANA 8-12: PLAN B -->
+            <div class="week-section" data-week="9" style="opacity: 0.6;">
+                <div class="week-header">
+                    <div class="week-title">
+                        <span class="week-number">8-12</span>
+                        PLAN B: Pivotar a Email Marketing IA
+                    </div>
+                    <div class="week-progress">
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: 0%"></div>
+                        </div>
+                        <span class="progress-text">0/17</span>
+                    </div>
+                </div>
+
+                <div class="milestone">50-100 usuarios, 20-40 pagando ($800-2,500 MRR)</div>
+
+                <div class="task-group">
+                    <div class="task-title">Semana 8: Validación Rápida</div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w9t1" onchange="updateProgress()">
+                        </div>
+                        <label for="w9t1" class="subtask-text">Crear landing page simple (Carrd/Webflow)</label>
+                    </div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w9t2" onchange="updateProgress()">
+                        </div>
+                        <label for="w9t2" class="subtask-text">Explicar concepto + CTA: "Join waitlist"</label>
+                    </div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w9t3" onchange="updateProgress()">
+                        </div>
+                        <label for="w9t3" class="subtask-text">Ads mínimos ($50) para validar interés</label>
+                    </div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w9t4" onchange="updateProgress()">
+                        </div>
+                        <label for="w9t4" class="subtask-text">Target: 50 emails en waitlist</label>
+                    </div>
+                </div>
+
+                <div class="task-group">
+                    <div class="task-title">Semana 9-10: MVP Email Marketing</div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w9t5" onchange="updateProgress()">
+                        </div>
+                        <label for="w9t5" class="subtask-text">Setup Next.js + Supabase</label>
+                    </div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w9t6" onchange="updateProgress()">
+                        </div>
+                        <label for="w9t6" class="subtask-text">Integrar OpenAI para generación</label>
+                    </div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w9t7" onchange="updateProgress()">
+                        </div>
+                        <label for="w9t7" class="subtask-text">Integrar SendGrid/Resend para envío</label>
+                    </div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w9t8" onchange="updateProgress()">
+                        </div>
+                        <label for="w9t8" class="subtask-text">Dashboard básico (importar CSV, generar, enviar)</label>
+                    </div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w9t9" onchange="updateProgress()">
+                        </div>
+                        <label for="w9t9" class="subtask-text">Sistema de créditos</label>
+                    </div>
+                </div>
+
+                <div class="task-group">
+                    <div class="task-title">Semana 11: Beta Cerrado</div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w9t10" onchange="updateProgress()">
+                        </div>
+                        <label for="w9t10" class="subtask-text">Invitar primeros 10 del waitlist</label>
+                    </div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w9t11" onchange="updateProgress()">
+                        </div>
+                        <label for="w9t11" class="subtask-text">Iterar con feedback</label>
+                    </div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w9t12" onchange="updateProgress()">
+                        </div>
+                        <label for="w9t12" class="subtask-text">Fix bugs</label>
+                    </div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w9t13" onchange="updateProgress()">
+                        </div>
+                        <label for="w9t13" class="subtask-text">Mejorar prompts de IA</label>
+                    </div>
+                </div>
+
+                <div class="task-group">
+                    <div class="task-title">Semana 12: Launch</div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w9t14" onchange="updateProgress()">
+                        </div>
+                        <label for="w9t14" class="subtask-text">Pricing: Free/$29/$79</label>
+                    </div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w9t15" onchange="updateProgress()">
+                        </div>
+                        <label for="w9t15" class="subtask-text">Landing page final</label>
+                    </div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w9t16" onchange="updateProgress()">
+                        </div>
+                        <label for="w9t16" class="subtask-text">Onboarding automático</label>
+                    </div>
+                    <div class="subtask">
+                        <div class="checkbox-wrapper">
+                            <input type="checkbox" id="w9t17" onchange="updateProgress()">
+                        </div>
+                        <label for="w9t17" class="subtask-text">🚀 Public launch + content marketing push</label>
+                    </div>
+                </div>
+
+                <div class="investment">Inversión total: $820 (acumulado)</div>
+            </div>
+        </div>
+
+        <div class="metrics-section">
+            <div class="metrics-title">📊 Métricas del Proyecto</div>
+            <div class="metrics-grid">
+                <div class="metric-item">
+                    <div class="metric-label">Total Tareas</div>
+                    <div class="metric-value">120</div>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-label">Completadas</div>
+                    <div class="metric-value" id="metricsCompleted">0</div>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-label">Pendientes</div>
+                    <div class="metric-value" id="metricsPending">120</div>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-label">% Progreso</div>
+                    <div class="metric-value" id="metricsProgress">0%</div>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-label">Semanas Activas</div>
+                    <div class="metric-value" id="metricsWeeks">0/9</div>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-label">MRR Objetivo</div>
+                    <div class="metric-value">$3,000</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button class="reset-button" onclick="resetProgress()">🔄 Resetear Todo</button>
+
+    <script>
+        // Load saved progress from localStorage
+        function loadProgress() {
+            const saved = localStorage.getItem('projectProgress');
+            if (saved) {
+                const progress = JSON.parse(saved);
+                Object.keys(progress).forEach(id => {
+                    const checkbox = document.getElementById(id);
+                    if (checkbox) {
+                        checkbox.checked = progress[id];
+                        if (progress[id]) {
+                            checkbox.closest('.subtask').classList.add('completed');
+                        }
+                    }
+                });
+            }
+            updateProgress();
+        }
+
+        // Save progress to localStorage
+        function saveProgress() {
+            const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+            const progress = {};
+            checkboxes.forEach(cb => {
+                progress[cb.id] = cb.checked;
+            });
+            localStorage.setItem('projectProgress', JSON.stringify(progress));
+        }
+
+        // Update all progress indicators
+        function updateProgress() {
+            saveProgress();
+            
+            const allCheckboxes = document.querySelectorAll('input[type="checkbox"]');
+            const totalTasks = allCheckboxes.length;
+            let completedTasks = 0;
+            
+            allCheckboxes.forEach(cb => {
+                if (cb.checked) {
+                    completedTasks++;
+                    cb.closest('.subtask').classList.add('completed');
+                } else {
+                    cb.closest('.subtask').classList.remove('completed');
+                }
+            });
+            
+            const progressPercent = Math.round((completedTasks / totalTasks) * 100);
+            
+            // Update top stats
+            document.getElementById('totalProgress').textContent = progressPercent + '%';
+            document.getElementById('completedTasks').textContent = completedTasks + '/' + totalTasks;
+            document.getElementById('metricsPending').textContent = (totalTasks - completedTasks);
+            document.getElementById('metricsCompleted').textContent = completedTasks;
+            document.getElementById('metricsProgress').textContent = progressPercent + '%';
+            
+            // Update each week's progress
+            const weekSections = document.querySelectorAll('.week-section');
+            let completedWeeks = 0;
+            
+            weekSections.forEach(section => {
+                const checkboxes = section.querySelectorAll('input[type="checkbox"]');
+                const total = checkboxes.length;
+                let completed = 0;
+                
+                checkboxes.forEach(cb => {
+                    if (cb.checked) completed++;
+                });
+                
+                const weekProgress = Math.round((completed / total) * 100);
+                const progressBar = section.querySelector('.progress-fill');
+                const progressText = section.querySelector('.progress-text');
+                
+                progressBar.style.width = weekProgress + '%';
+                progressText.textContent = completed + '/' + total;
+                
+                // Update week status
+                section.classList.remove('completed', 'in-progress');
+                if (weekProgress === 100) {
+                    section.classList.add('completed');
+                    completedWeeks++;
+                } else if (weekProgress > 0) {
+                    section.classList.add('in-progress');
+                }
+            });
+            
+            document.getElementById('metricsWeeks').textContent = completedWeeks + '/9';
+            
+            // Calculate days left (assuming start date)
+            const startDate = new Date(localStorage.getItem('startDate') || Date.now());
+            const today = new Date();
+            const daysElapsed = Math.floor((today - startDate) / (1000 * 60 * 60 * 24));
+            const daysLeft = Math.max(0, 84 - daysElapsed);
+            document.getElementById('daysLeft').textContent = daysLeft;
+            
+            // Calculate current week
+            const currentWeek = Math.min(12, Math.floor(daysElapsed / 7) + 1);
+            document.getElementById('currentWeek').textContent = currentWeek;
+            
+            // Calculate investment based on completed weeks
+            const investments = [0, 20, 20, 20, 50, 200, 200, 250, 820, 820];
+            let totalInvestment = 0;
+            for (let i = 0; i <= completedWeeks && i < investments.length; i++) {
+                totalInvestment = investments[i];
+            }
+            document.getElementById('totalInvestment').textContent = '$' + totalInvestment;
+        }
+
+        // Reset all progress
+        function resetProgress() {
+            if (confirm('¿Estás seguro de que quieres resetear todo el progreso? Esta acción no se puede deshacer.')) {
+                localStorage.removeItem('projectProgress');
+                localStorage.setItem('startDate', Date.now());
+                const checkboxes = document.querySelectorAll('input[type="checkbox"]');
+                checkboxes.forEach(cb => {
+                    cb.checked = false;
+                    cb.closest('.subtask').classList.remove('completed');
+                });
+                updateProgress();
+            }
+        }
+
+        // Initialize
+        if (!localStorage.getItem('startDate')) {
+            localStorage.setItem('startDate', Date.now());
+        }
+        
+        loadProgress();
+    </script>
+</body>
+</html>
