@@ -40,6 +40,23 @@
         "command": "ai-commit-pro.gitWorkflow",
         "title": "AI Commit: Open Git Workflow",
         "icon": "$(git-branch)"
+      },
+      {
+        "command": "ai-commit-pro.refreshGitWorkflow",
+        "title": "Refresh",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "ai-commit-pro.stageFile",
+        "title": "Stage File"
+      },
+      {
+        "command": "ai-commit-pro.unstageFile",
+        "title": "Unstage File"
+      },
+      {
+        "command": "ai-commit-pro.switchBranch",
+        "title": "Switch to Branch"
       }
     ],
     "keybindings": [
@@ -116,6 +133,40 @@
         {
           "command": "ai-commit-pro.gitWorkflow",
           "group": "navigation",
+          "when": "scmProvider == git"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "ai-commit-pro.refreshGitWorkflow",
+          "group": "navigation",
+          "when": "view == gitWorkflowView"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "ai-commit-pro.stageFile",
+          "when": "view == gitWorkflowView && viewItem == unstaged-file",
+          "group": "1_modification"
+        },
+        {
+          "command": "ai-commit-pro.unstageFile",
+          "when": "view == gitWorkflowView && viewItem == staged-file",
+          "group": "1_modification"
+        },
+        {
+          "command": "ai-commit-pro.switchBranch",
+          "when": "view == gitWorkflowView && viewItem == branch",
+          "group": "2_workspace"
+        }
+      ]
+    },
+    "views": {
+      "scm": [
+        {
+          "id": "gitWorkflowView",
+          "name": "Git Workflow",
+          "icon": "$(git-branch)",
           "when": "scmProvider == git"
         }
       ]

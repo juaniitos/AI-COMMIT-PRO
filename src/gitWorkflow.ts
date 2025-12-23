@@ -12,6 +12,15 @@ export interface GitWorkflowState {
   branch: string;
   isClean: boolean;
   canPush: boolean;
+  localBranches: string[];
+  remoteBranches: string[];
+}
+
+export interface BranchInfo {
+  name: string;
+  isLocal: boolean;
+  isRemote: boolean;
+  isCurrent: boolean;
 }
 
 export class GitWorkflowService {
@@ -44,6 +53,11 @@ export class GitWorkflowService {
       const branch = status.current || 'unknown';
       const isClean = status.isClean();
 
+      // Obtener ramas locales y remotas
+      const branches = await this.git.branch();
+      const localBranches = branches.all.filter(b => !b.includes('remotes')).map(b => b.replace('* ', ''));
+      const remoteBranches = branches.all.filter(b => b.includes('remotes')).map(b => b.trim());
+
       // Verificar si hay commits para push
       let canPush = false;
       try {
@@ -58,7 +72,9 @@ export class GitWorkflowService {
         staged,
         branch,
         isClean,
-        canPush
+        canPush,
+        localBranches,
+        remoteBranches
       };
     } catch (error) {
       throw new Error(`Error getting Git workflow state: ${error}`);
@@ -93,9 +109,74 @@ export class GitWorkflowService {
 
   async push(): Promise<void> {
     try {
-      await this.git.push();
+      const status = await this.git.status();
+      const currentBranch = status.current;
+
+      if (!currentBranch) {
+        throw new Error('No branch detected');
+      }
+
+      // Intentar push normal
+      try {
+        await this.git.push();
+      } catch (error: any) {
+        // Si falla por no tener upstream, establecerlo
+        if (error.message.includes('no upstream branch')) {
+          await this.git.push(['--set-upstream', 'origin', currentBranch]);
+        } else {
+          throw error;
+        }
+      }
     } catch (error) {
       throw new Error(`Error pushing: ${error}`);
+    }
+  }
+
+  async switchBranch(branchName: string): Promise<void> {
+    try {
+      await this.git.checkout(branchName);
+    } catch (error) {
+      throw new Error(`Error switching branch: ${error}`);
+    }
+  }
+
+  async getAllBranches(): Promise<BranchInfo[]> {
+    try {
+      const branches = await this.git.branch();
+      const status = await this.git.status();
+      const currentBranch = status.current;
+
+      const allBranches: BranchInfo[] = [];
+
+      // Agregar ramas locales
+      for (const branch of branches.all) {
+        const cleanName = branch.replace('* ', '').trim();
+        if (!cleanName.includes('remotes')) {
+          allBranches.push({
+            name: cleanName,
+            isLocal: true,
+            isRemote: false,
+            isCurrent: cleanName === currentBranch
+          });
+        }
+      }
+
+      // Agregar ramas remotas
+      for (const branch of branches.all) {
+        if (branch.includes('remotes')) {
+          const cleanName = branch.trim();
+          allBranches.push({
+            name: cleanName,
+            isLocal: false,
+            isRemote: true,
+            isCurrent: false
+          });
+        }
+      }
+
+      return allBranches;
+    } catch (error) {
+      throw new Error(`Error getting branches: ${error}`);
     }
   }
 

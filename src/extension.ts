@@ -5,6 +5,9 @@ import { AIService } from './anthropic';
 import { CommitMessagePanel } from './webview';
 import { GitWorkflowService } from './gitWorkflow';
 import { GitWorkflowPanel } from './gitWorkflowPanel';
+import { GitWorkflowTreeProvider } from './gitWorkflowTree';
+
+let treeProvider: GitWorkflowTreeProvider | undefined;
 
 export function activate(context: vscode.ExtensionContext) {
   console.log('AI Commit Pro is now active!');
@@ -23,7 +26,57 @@ export function activate(context: vscode.ExtensionContext) {
     }
   );
 
-  context.subscriptions.push(generateCommit, gitWorkflow);
+  const refreshGitWorkflow = vscode.commands.registerCommand(
+    'ai-commit-pro.refreshGitWorkflow',
+    () => {
+      if (treeProvider) {
+        treeProvider.refresh();
+      }
+    }
+  );
+
+  const stageFile = vscode.commands.registerCommand(
+    'ai-commit-pro.stageFile',
+    async (file) => {
+      if (treeProvider) {
+        await treeProvider.stageFile(file);
+      }
+    }
+  );
+
+  const unstageFile = vscode.commands.registerCommand(
+    'ai-commit-pro.unstageFile',
+    async (file) => {
+      if (treeProvider) {
+        await treeProvider.unstageFile(file);
+      }
+    }
+  );
+
+  const switchBranch = vscode.commands.registerCommand(
+    'ai-commit-pro.switchBranch',
+    async (branch) => {
+      if (treeProvider) {
+        await treeProvider.switchBranch(branch);
+      }
+    }
+  );
+
+  // Registrar TreeView
+  const workspaceFolders = vscode.workspace.workspaceFolders;
+  if (workspaceFolders && workspaceFolders.length > 0) {
+    treeProvider = new GitWorkflowTreeProvider(workspaceFolders[0].uri.fsPath);
+    vscode.window.registerTreeDataProvider('gitWorkflowView', treeProvider);
+  }
+
+  context.subscriptions.push(
+    generateCommit,
+    gitWorkflow,
+    refreshGitWorkflow,
+    stageFile,
+    unstageFile,
+    switchBranch
+  );
 }
 
 async function generateCommitMessage(context: vscode.ExtensionContext) {
