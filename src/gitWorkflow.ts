@@ -6,6 +6,13 @@ export interface GitFile {
   staged: boolean;
 }
 
+export interface GitCommit {
+  hash: string;
+  message: string;
+  author: string;
+  date: string;
+}
+
 export interface GitWorkflowState {
   unstaged: GitFile[];
   staged: GitFile[];
@@ -14,6 +21,7 @@ export interface GitWorkflowState {
   canPush: boolean;
   localBranches: string[];
   remoteBranches: string[];
+  recentCommits: GitCommit[];
 }
 
 export interface BranchInfo {
@@ -67,6 +75,22 @@ export class GitWorkflowService {
         canPush = false;
       }
 
+      // Obtener commits recientes
+      const recentCommits: GitCommit[] = [];
+      try {
+        const log = await this.git.log(['-n', '10']);
+        for (const commit of log.all) {
+          recentCommits.push({
+            hash: commit.hash.substring(0, 7),
+            message: commit.message,
+            author: commit.author_name,
+            date: new Date(commit.date).toLocaleDateString()
+          });
+        }
+      } catch {
+        // Si no hay commits, dejar array vacío
+      }
+
       return {
         unstaged,
         staged,
@@ -74,7 +98,8 @@ export class GitWorkflowService {
         isClean,
         canPush,
         localBranches,
-        remoteBranches
+        remoteBranches,
+        recentCommits
       };
     } catch (error) {
       throw new Error(`Error getting Git workflow state: ${error}`);

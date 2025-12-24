@@ -57,6 +57,16 @@
       {
         "command": "ai-commit-pro.switchBranch",
         "title": "Switch to Branch"
+      },
+      {
+        "command": "ai-commit-pro.stageAllFiles",
+        "title": "Stage All Files",
+        "icon": "$(add)"
+      },
+      {
+        "command": "ai-commit-pro.pushToRemote",
+        "title": "Push to Remote",
+        "icon": "$(cloud-upload)"
       }
     ],
     "keybindings": [

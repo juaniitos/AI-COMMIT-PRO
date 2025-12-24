@@ -75,6 +75,15 @@ export class GitWorkflowTreeProvider implements vscode.TreeDataProvider<GitWorkf
         )
       );
 
+      // BOTONES DE ACCIÓN
+      items.push(
+        new GitWorkflowItem(
+          '🚀 Acciones',
+          vscode.TreeItemCollapsibleState.Expanded,
+          'actions-group'
+        )
+      );
+
       // Archivos sin stage
       if (this.state.unstaged.length > 0) {
         items.push(
@@ -97,6 +106,17 @@ export class GitWorkflowTreeProvider implements vscode.TreeDataProvider<GitWorkf
         );
       }
 
+      // Commits recientes
+      if (this.state.recentCommits && this.state.recentCommits.length > 0) {
+        items.push(
+          new GitWorkflowItem(
+            `📜 Commits recientes (${this.state.recentCommits.length})`,
+            vscode.TreeItemCollapsibleState.Collapsed,
+            'commits-group'
+          )
+        );
+      }
+
       // Ramas
       items.push(
         new GitWorkflowItem(
@@ -110,6 +130,78 @@ export class GitWorkflowTreeProvider implements vscode.TreeDataProvider<GitWorkf
     }
 
     // Children of groups
+    if (element.type === 'actions-group') {
+      const actions: GitWorkflowItem[] = [];
+
+      // Botón: Stage All
+      if (this.state && this.state.unstaged.length > 0) {
+        actions.push(
+          new GitWorkflowItem(
+            '➕ Stage All Files',
+            vscode.TreeItemCollapsibleState.None,
+            'action-stage-all',
+            undefined,
+            undefined,
+            {
+              command: 'ai-commit-pro.stageAllFiles',
+              title: 'Stage All Files'
+            }
+          )
+        );
+      }
+
+      // Botón: Generate Commit (solo si hay archivos staged)
+      if (this.state && this.state.staged.length > 0) {
+        actions.push(
+          new GitWorkflowItem(
+            '✨ Generate Commit Message',
+            vscode.TreeItemCollapsibleState.None,
+            'action-generate-commit',
+            undefined,
+            undefined,
+            {
+              command: 'ai-commit-pro.generateCommit',
+              title: 'Generate Commit Message'
+            }
+          )
+        );
+      }
+
+      // Botón: Push (solo si se puede hacer push)
+      if (this.state && this.state.canPush) {
+        actions.push(
+          new GitWorkflowItem(
+            '🚀 Push to Remote',
+            vscode.TreeItemCollapsibleState.None,
+            'action-push',
+            undefined,
+            undefined,
+            {
+              command: 'ai-commit-pro.pushToRemote',
+              title: 'Push to Remote'
+            }
+          )
+        );
+      }
+
+      // Botón: Refresh
+      actions.push(
+        new GitWorkflowItem(
+          '🔄 Refresh Status',
+          vscode.TreeItemCollapsibleState.None,
+          'action-refresh',
+          undefined,
+          undefined,
+          {
+            command: 'ai-commit-pro.refreshGitWorkflow',
+            title: 'Refresh Status'
+          }
+        )
+      );
+
+      return actions;
+    }
+
     if (element.type === 'unstaged-group' && this.state) {
       return this.state.unstaged.map(
         file =>
@@ -131,6 +223,20 @@ export class GitWorkflowTreeProvider implements vscode.TreeDataProvider<GitWorkf
             'file',
             file
           )
+      );
+    }
+
+    if (element.type === 'commits-group' && this.state) {
+      return this.state.recentCommits.map(commit =>
+        new GitWorkflowItem(
+          `${commit.hash} - ${commit.message}`,
+          vscode.TreeItemCollapsibleState.None,
+          'commit',
+          undefined,
+          undefined,
+          undefined,
+          commit
+        )
       );
     }
 
@@ -181,6 +287,19 @@ export class GitWorkflowTreeProvider implements vscode.TreeDataProvider<GitWorkf
     }
   }
 
+  async stageAllFiles(): Promise<void> {
+    if (!this.gitWorkflowService || !this.state) {return;}
+    try {
+      const allFiles = this.state.unstaged.map(f => f.path);
+      if (allFiles.length > 0) {
+        await this.gitWorkflowService.stageFiles(allFiles);
+        this.refresh();
+      }
+    } catch (error) {
+      vscode.window.showErrorMessage(`Error staging all files: ${error}`);
+    }
+  }
+
   async unstageFile(file: GitWorkflowItem | undefined): Promise<void> {
     if (!file || !file.file || !this.gitWorkflowService) {return;}
     try {
@@ -206,6 +325,26 @@ export class GitWorkflowTreeProvider implements vscode.TreeDataProvider<GitWorkf
       vscode.window.showErrorMessage(`Error switching branch: ${error}`);
     }
   }
+
+  async pushToRemote(): Promise<void> {
+    if (!this.gitWorkflowService) {return;}
+    try {
+      await vscode.window.withProgress(
+        {
+          location: vscode.ProgressLocation.Notification,
+          title: 'Pushing to remote...',
+          cancellable: false
+        },
+        async () => {
+          await this.gitWorkflowService!.push();
+        }
+      );
+      vscode.window.showInformationMessage('✅ Push successful!');
+      this.refresh();
+    } catch (error) {
+      vscode.window.showErrorMessage(`❌ Error pushing: ${error}`);
+    }
+  }
 }
 
 export class GitWorkflowItem extends vscode.TreeItem {
@@ -215,10 +354,14 @@ export class GitWorkflowItem extends vscode.TreeItem {
     public readonly type: string,
     public readonly file?: any,
     public readonly branchName?: string,
-    public readonly command?: vscode.Command
+    public readonly command?: vscode.Command,
+    public readonly commit?: any
   ) {
     super(label, collapsibleState);
 
+    if (command) {
+      this.command = command;
+    }
     this.tooltip = new vscode.MarkdownString(label);
 
     if (type === 'file') {
@@ -235,6 +378,16 @@ export class GitWorkflowItem extends vscode.TreeItem {
     } else if (type === 'branch-local' || type === 'branch-remote') {
       this.contextValue = 'branch';
       this.iconPath = new vscode.ThemeIcon('git-branch');
+    } else if (type === 'commit') {
+      this.iconPath = new vscode.ThemeIcon('git-commit');
+      if (commit) {
+        this.tooltip = new vscode.MarkdownString(
+          `**${commit.message}**\n\n` +
+          `Author: ${commit.author}\n` +
+          `Date: ${commit.date}\n` +
+          `Hash: ${commit.hash}`
+        );
+      }
     }
   }
 }

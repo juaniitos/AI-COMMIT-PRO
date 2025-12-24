@@ -62,6 +62,24 @@ export function activate(context: vscode.ExtensionContext) {
     }
   );
 
+  const stageAllFiles = vscode.commands.registerCommand(
+    'ai-commit-pro.stageAllFiles',
+    async () => {
+      if (treeProvider) {
+        await treeProvider.stageAllFiles();
+      }
+    }
+  );
+
+  const pushToRemote = vscode.commands.registerCommand(
+    'ai-commit-pro.pushToRemote',
+    async () => {
+      if (treeProvider) {
+        await treeProvider.pushToRemote();
+      }
+    }
+  );
+
   // Registrar TreeView
   const workspaceFolders = vscode.workspace.workspaceFolders;
   if (workspaceFolders && workspaceFolders.length > 0) {
@@ -75,7 +93,9 @@ export function activate(context: vscode.ExtensionContext) {
     refreshGitWorkflow,
     stageFile,
     unstageFile,
-    switchBranch
+    switchBranch,
+    stageAllFiles,
+    pushToRemote
   );
 }
 
