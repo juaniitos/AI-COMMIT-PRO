@@ -43,20 +43,36 @@ export class GitWorkflowTreeProvider implements vscode.TreeDataProvider<GitWorkf
       // Root level
       const items: GitWorkflowItem[] = [];
 
-      // Status
+      // Estado limpio o cambios - primero el estado principal
+      const statusIcon = this.state.isClean ? '✅' : '📝';
+      const unstagedCount = this.state.unstaged.length;
+      const stagedCount = this.state.staged.length;
+      
+      let statusText = '';
+      if (this.state.isClean) {
+        statusText = '✅ Sin cambios';
+      } else {
+        const parts = [];
+        if (unstagedCount > 0) {
+          parts.push(`${unstagedCount} sin stage`);
+        }
+        if (stagedCount > 0) {
+          parts.push(`${stagedCount} staged`);
+        }
+        statusText = `📝 ${parts.join(', ')}`;
+      }
+      
+      items.push(
+        new GitWorkflowItem(statusText, vscode.TreeItemCollapsibleState.None, 'status')
+      );
+
+      // Branch
       items.push(
         new GitWorkflowItem(
           `📍 Branch: ${this.state.branch}`,
           vscode.TreeItemCollapsibleState.None,
           'status'
         )
-      );
-
-      // Estado limpio o cambios
-      const statusIcon = this.state.isClean ? '✅' : '⚠️';
-      const statusText = this.state.isClean ? 'Sin cambios' : `${this.state.unstaged.length} cambios sin stage`;
-      items.push(
-        new GitWorkflowItem(statusText, vscode.TreeItemCollapsibleState.None, 'status')
       );
 
       // Archivos sin stage

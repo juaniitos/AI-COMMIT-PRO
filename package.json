@@ -165,7 +165,7 @@
       "scm": [
         {
           "id": "gitWorkflowView",
-          "name": "Git Workflow",
+          "name": "AI Commit Pro",
           "icon": "$(git-branch)",
           "when": "scmProvider == git"
         }

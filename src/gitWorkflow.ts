@@ -123,6 +123,10 @@ export class GitWorkflowService {
         // Si falla por no tener upstream, establecerlo
         if (error.message.includes('no upstream branch')) {
           await this.git.push(['--set-upstream', 'origin', currentBranch]);
+        } else if (error.message.includes('rejected') || error.message.includes('fetch first')) {
+          // Si el rechazo es porque el remoto tiene cambios, hacer pull y luego push
+          await this.git.pull();
+          await this.git.push();
         } else {
           throw error;
         }
